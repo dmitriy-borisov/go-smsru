@@ -1,6 +1,7 @@
 # Golang-client for the SMS.ru API #
 
 [![Build Status](https://travis-ci.org/dmitriy-borisov/go-smsru.svg?branch=master)](https://travis-ci.org/dmitriy-borisov/go-smsru)
+[![GoDoc](https://godoc.org/github.com/dmitriy-borisov/go-smsru?status.svg)](https://godoc.org/github.com/dmitriy-borisov/go-smsru)
 
 Supports:
 - sms/send, sms/status, sms/cost
