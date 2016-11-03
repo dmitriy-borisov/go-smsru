@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// Base API url
 const API_URL = "http://sms.ru"
 
 var codeStatus map[int]string = map[int]string{
@@ -51,13 +52,19 @@ var codeStatus map[int]string = map[int]string{
 	902: "Callback is not defined",
 }
 
-var ERROR_INTERNAL = errors.New("Internal Error")
-var NO_RESPONSE = errors.New("Something went wrong")
+var error_internal = errors.New("Internal Error")
+var error_no_response = errors.New("Something went wrong")
 
+// NewClient creates a new SmsClient instance.
+//
+// id is your api_id
 func NewClient(id string) *SmsClient {
 	return NewClientWithHttp(id, &http.Client{})
 }
 
+// NewClientWithHttp creates a new SmsClient instance
+//
+// and allows you to pass a http.Client.
 func NewClientWithHttp(id string, client *http.Client) *SmsClient {
 	c := &SmsClient{
 		ApiId: id,
@@ -67,6 +74,9 @@ func NewClientWithHttp(id string, client *http.Client) *SmsClient {
 	return c
 }
 
+// NewSms creates a new message
+//
+// to is where to send it (phone number), text is the message text.
 func NewSms(to string, text string) *Sms {
 	return &Sms{
 		To:   to,
@@ -74,6 +84,7 @@ func NewSms(to string, text string) *Sms {
 	}
 }
 
+// NewMulti creates a one request for multiple messages
 func NewMulti(sms ...*Sms) *Sms {
 	arr := make(map[string]string)
 	for _, o := range sms {
@@ -102,11 +113,11 @@ func (c *SmsClient) makeRequest(endpoint string, params url.Values) (Response, [
 	}
 
 	if err := sc.Err(); err != nil {
-		return Response{}, nil, ERROR_INTERNAL
+		return Response{}, nil, error_internal
 	}
 
 	if len(lines) == 0 {
-		return Response{}, nil, NO_RESPONSE
+		return Response{}, nil, error_no_response
 	}
 
 	status, _ := strconv.Atoi(lines[0])
@@ -120,8 +131,7 @@ func (c *SmsClient) makeRequest(endpoint string, params url.Values) (Response, [
 	return res, lines, nil
 }
 
-/* Sms
----------------------------------------------*/
+// SmsSend will send a Sms item to Service
 func (c *SmsClient) SmsSend(p *Sms) (Response, error) {
 	var params = url.Values{}
 
@@ -172,7 +182,7 @@ func (c *SmsClient) SmsSend(p *Sms) (Response, error) {
 			str := re.ReplaceAllString(lines[i], "")
 			balance, err := strconv.ParseFloat(str, 32)
 			if err != nil {
-				return Response{}, ERROR_INTERNAL
+				return Response{}, error_internal
 			}
 			res.Balance = float32(balance)
 		} else {
@@ -184,6 +194,7 @@ func (c *SmsClient) SmsSend(p *Sms) (Response, error) {
 	return res, nil
 }
 
+// SmsStatus will get a status of message
 func (c *SmsClient) SmsStatus(id string) (Response, error) {
 	params := url.Values{}
 	params.Set("id", id)
@@ -196,6 +207,7 @@ func (c *SmsClient) SmsStatus(id string) (Response, error) {
 	return res, nil
 }
 
+// SmsStatus will get a status of message
 func (c *SmsClient) SmsCost(p *Sms) (Response, error) {
 	var params = url.Values{}
 	params.Set("to", p.To)
@@ -211,12 +223,12 @@ func (c *SmsClient) SmsCost(p *Sms) (Response, error) {
 
 	cost, err := strconv.ParseFloat(lines[1], 32)
 	if err != nil {
-		return Response{}, ERROR_INTERNAL
+		return Response{}, error_internal
 	}
 
 	count, err := strconv.Atoi(lines[2])
 	if err != nil {
-		return Response{}, ERROR_INTERNAL
+		return Response{}, error_internal
 	}
 
 	res.Cost = float32(cost)
@@ -225,8 +237,7 @@ func (c *SmsClient) SmsCost(p *Sms) (Response, error) {
 	return res, nil
 }
 
-/* My
----------------------------------------------*/
+// MyBalance checks the balance
 func (c *SmsClient) MyBalance() (Response, error) {
 	res, lines, err := c.makeRequest("/my/balance", url.Values{})
 	if err != nil {
@@ -235,13 +246,14 @@ func (c *SmsClient) MyBalance() (Response, error) {
 
 	balance, err := strconv.ParseFloat(lines[1], 32)
 	if err != nil {
-		return Response{}, ERROR_INTERNAL
+		return Response{}, error_internal
 	}
 
 	res.Balance = float32(balance)
 	return res, nil
 }
 
+// MyLimit checks the limit
 func (c *SmsClient) MyLimit() (Response, error) {
 	res, lines, err := c.makeRequest("/my/limit", url.Values{})
 	if err != nil {
@@ -250,12 +262,12 @@ func (c *SmsClient) MyLimit() (Response, error) {
 
 	limit, err := strconv.Atoi(lines[1])
 	if err != nil {
-		return Response{}, ERROR_INTERNAL
+		return Response{}, error_internal
 	}
 
 	limitSent, err := strconv.Atoi(lines[2])
 	if err != nil {
-		return Response{}, ERROR_INTERNAL
+		return Response{}, error_internal
 	}
 
 	res.Limit = limit
@@ -263,6 +275,7 @@ func (c *SmsClient) MyLimit() (Response, error) {
 	return res, nil
 }
 
+// MySenders recieves the list of senders
 func (c *SmsClient) MySenders() (Response, error) {
 	res, lines, err := c.makeRequest("/my/senders", url.Values{})
 	if err != nil {
@@ -278,8 +291,7 @@ func (c *SmsClient) MySenders() (Response, error) {
 	return res, nil
 }
 
-/* Stoplist
----------------------------------------------*/
+// StoplistGet recieves the stoplist
 func (c *SmsClient) StoplistGet() (Response, error) {
 	res, lines, err := c.makeRequest("/stoplist/get", url.Values{})
 	if err != nil {
@@ -298,6 +310,9 @@ func (c *SmsClient) StoplistGet() (Response, error) {
 	return res, nil
 }
 
+// StoplistAdd will add the phone number to stoplist
+//
+// phone is phone number, text is the additional information.
 func (c *SmsClient) StoplistAdd(phone, text string) (Response, error) {
 	params := url.Values{}
 	params.Set("stoplist_phone", phone)
@@ -311,6 +326,9 @@ func (c *SmsClient) StoplistAdd(phone, text string) (Response, error) {
 	return res, nil
 }
 
+// StoplistDel will delete the phone number from stoplist
+//
+// phone is phone number
 func (c *SmsClient) StoplistDel(phone string) (Response, error) {
 	params := url.Values{}
 	params.Set("stoplist_phone", phone)
@@ -323,8 +341,7 @@ func (c *SmsClient) StoplistDel(phone string) (Response, error) {
 	return res, nil
 }
 
-/* Callback
----------------------------------------------*/
+// CallbackGet recieves the callbacks from service
 func (c *SmsClient) CallbackGet() (Response, error) {
 	res, lines, err := c.makeRequest("/callback/get", url.Values{})
 	if err != nil {
@@ -340,6 +357,9 @@ func (c *SmsClient) CallbackGet() (Response, error) {
 	return res, nil
 }
 
+// CallbackAdd will add the callback url to service
+//
+// cbUrl is your callback url
 func (c *SmsClient) CallbackAdd(cbUrl string) (Response, error) {
 	params := url.Values{}
 	params.Set("url", cbUrl)
@@ -358,6 +378,9 @@ func (c *SmsClient) CallbackAdd(cbUrl string) (Response, error) {
 	return res, nil
 }
 
+// CallbackDel will delete the callback url from service
+//
+// cbUrl is your callback url
 func (c *SmsClient) CallbackDel(cbUrl string) (Response, error) {
 	params := url.Values{}
 	params.Set("url", cbUrl)

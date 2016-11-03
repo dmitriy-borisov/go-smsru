@@ -35,12 +35,3 @@ type Sms struct {
 	Test      bool              `json:"test"`
 	PartnerId int               `json:"partner_id"`
 }
-
-type Stoplist struct {
-	StoplistPhone string `json:"stoplist_phone"`
-	StoplistText  string `json:"stoplist_text"`
-}
-
-type Callback struct {
-	Url string `json:"url"`
-}
