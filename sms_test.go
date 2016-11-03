@@ -1,7 +1,7 @@
 package sms_test
 
 import (
-	"github.com/dm-borisov/go-smsru"
+	"github.com/dmitriy-borisov/go-smsru"
 	"os"
 	"testing"
 )
